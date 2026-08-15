@@ -37,7 +37,8 @@ import WebKit
             public func makeUIView(context: Context) -> CustomWebView { context.coordinator.platformView }
         #endif
 
-        func updatePlatformView(_ platformView: CustomWebView, context _: Context) {
+        func updatePlatformView(_ platformView: CustomWebView, context: Context) {
+            context.coordinator.parent = self
             guard !platformView.isLoading else { return } /// This function might be called when the page is still loading, at which time `window.proxy` is not available yet.
             platformView.updateMarkdownContent(markdownContent)
         }
@@ -57,7 +58,7 @@ import WebKit
         }
 
         public class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
-            let parent: MarkdownWebView
+            var parent: MarkdownWebView
             let platformView: CustomWebView
 
             init(parent: MarkdownWebView) {
@@ -118,7 +119,7 @@ import WebKit
 
             /// Update the content on first finishing loading.
             public func webView(_ webView: WKWebView, didFinish _: WKNavigation!) {
-                (webView as! CustomWebView).updateMarkdownContent(parent.markdownContent)
+                (webView as! CustomWebView).updateMarkdownContent(parent.markdownContent, force: true)
             }
 
             public func webView(_: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
@@ -169,6 +170,7 @@ import WebKit
 
         public class CustomWebView: WKWebView {
             var contentHeight: CGFloat = 0
+            private var lastAppliedMarkdownContent: String?
 
             override public var intrinsicContentSize: CGSize {
                 .init(width: super.intrinsicContentSize.width, height: contentHeight)
@@ -189,9 +191,11 @@ import WebKit
                 }
             #endif
 
-            func updateMarkdownContent(_ markdownContent: String) {
+            func updateMarkdownContent(_ markdownContent: String, force: Bool = false) {
+                guard force || markdownContent != lastAppliedMarkdownContent else { return }
                 guard let markdownContentBase64Encoded = markdownContent.data(using: .utf8)?.base64EncodedString() else { return }
 
+                lastAppliedMarkdownContent = markdownContent
                 callAsyncJavaScript("window.updateWithMarkdownContentBase64Encoded(`\(markdownContentBase64Encoded)`)", in: nil, in: .page, completionHandler: nil)
             }
 
