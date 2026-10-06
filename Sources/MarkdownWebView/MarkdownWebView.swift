@@ -196,7 +196,13 @@ import WebKit
                 guard let markdownContentBase64Encoded = markdownContent.data(using: .utf8)?.base64EncodedString() else { return }
 
                 lastAppliedMarkdownContent = markdownContent
-                callAsyncJavaScript("window.updateWithMarkdownContentBase64Encoded(`\(markdownContentBase64Encoded)`)", in: nil, in: .page, completionHandler: nil)
+                // Use the Clang-imported Objective-C entry point so SDK 27 does
+                // not bind an older deployment target to libswiftWebKit.
+                __callAsyncJavaScript(
+                    "window.updateWithMarkdownContentBase64Encoded(markdownContent)",
+                    arguments: ["markdownContent": markdownContentBase64Encoded],
+                    inFrame: nil, in: .page, completionHandler: nil
+                )
             }
 
             #if os(macOS)
