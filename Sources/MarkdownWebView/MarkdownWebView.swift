@@ -160,8 +160,8 @@ import WebKit
                     else { return }
                     renderedContentHandler(renderedContent)
                 case "copyToPasteboard":
-                    guard let base64EncodedString = message.body as? String else { return }
-                    base64EncodedString.trimmingCharacters(in: .whitespacesAndNewlines).copyToPasteboard()
+                    guard let code = message.body as? String else { return }
+                    code.copyToPasteboard()
                 default:
                     return
                 }
