@@ -22,5 +22,9 @@ let package = Package(
                         .copy("Resources/stylesheets/default-macOS"),
                         .copy("Resources/stylesheets/default-iOS")]
         ),
+        .testTarget(
+            name: "MarkdownWebViewTests",
+            dependencies: ["MarkdownWebView"]
+        ),
     ]
 )

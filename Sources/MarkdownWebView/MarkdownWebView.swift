@@ -45,8 +45,16 @@ import WebKit
 
         #if os(macOS)
             public func updateNSView(_ nsView: CustomWebView, context: Context) { updatePlatformView(nsView, context: context) }
+
+            public static func dismantleNSView(_ nsView: CustomWebView, coordinator: Coordinator) {
+                coordinator.dismantle()
+            }
         #elseif os(iOS)
             public func updateUIView(_ uiView: CustomWebView, context: Context) { updatePlatformView(uiView, context: context) }
+
+            public static func dismantleUIView(_ uiView: CustomWebView, coordinator: Coordinator) {
+                coordinator.dismantle()
+            }
         #endif
 
         public func onLinkActivation(_ linkActivationHandler: @escaping (URL) -> Void) -> Self {
@@ -115,6 +123,15 @@ import WebKit
                     .replacingOccurrences(of: "PLACEHOLDER_SCRIPT", with: script)
                     .replacingOccurrences(of: "PLACEHOLDER_STYLESHEET", with: self.parent.customStylesheet ?? defaultStylesheet)
                 platformView.loadHTMLString(htmlString, baseURL: nil)
+            }
+
+            func dismantle() {
+                platformView.stopLoading()
+                platformView.navigationDelegate = nil
+                let controller = platformView.configuration.userContentController
+                controller.removeScriptMessageHandler(forName: "sizeChangeHandler")
+                controller.removeScriptMessageHandler(forName: "renderedContentHandler")
+                controller.removeScriptMessageHandler(forName: "copyToPasteboard")
             }
 
             /// Update the content on first finishing loading.
