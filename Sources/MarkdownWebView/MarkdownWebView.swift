@@ -45,8 +45,16 @@ import WebKit
 
         #if os(macOS)
             public func updateNSView(_ nsView: CustomWebView, context: Context) { updatePlatformView(nsView, context: context) }
+
+            public static func dismantleNSView(_ nsView: CustomWebView, coordinator: Coordinator) {
+                coordinator.dismantle()
+            }
         #elseif os(iOS)
             public func updateUIView(_ uiView: CustomWebView, context: Context) { updatePlatformView(uiView, context: context) }
+
+            public static func dismantleUIView(_ uiView: CustomWebView, coordinator: Coordinator) {
+                coordinator.dismantle()
+            }
         #endif
 
         public func onLinkActivation(_ linkActivationHandler: @escaping (URL) -> Void) -> Self {
@@ -117,6 +125,15 @@ import WebKit
                 platformView.loadHTMLString(htmlString, baseURL: nil)
             }
 
+            func dismantle() {
+                platformView.stopLoading()
+                platformView.navigationDelegate = nil
+                let controller = platformView.configuration.userContentController
+                controller.removeScriptMessageHandler(forName: "sizeChangeHandler")
+                controller.removeScriptMessageHandler(forName: "renderedContentHandler")
+                controller.removeScriptMessageHandler(forName: "copyToPasteboard")
+            }
+
             /// Update the content on first finishing loading.
             public func webView(_ webView: WKWebView, didFinish _: WKNavigation!) {
                 (webView as! CustomWebView).updateMarkdownContent(parent.markdownContent, force: true)
@@ -160,8 +177,8 @@ import WebKit
                     else { return }
                     renderedContentHandler(renderedContent)
                 case "copyToPasteboard":
-                    guard let base64EncodedString = message.body as? String else { return }
-                    base64EncodedString.trimmingCharacters(in: .whitespacesAndNewlines).copyToPasteboard()
+                    guard let code = message.body as? String else { return }
+                    code.copyToPasteboard()
                 default:
                     return
                 }
